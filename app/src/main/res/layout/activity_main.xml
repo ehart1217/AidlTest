@@ -15,17 +15,48 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onRequestLogin"
-        android:text="request Login" />
+        android:text="登录" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onRequestLogout"
-        android:text="request Logout" />
+        android:text="退出登录" />
 
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:onClick="onRequestReadStatus"
-        android:text="Request Read Status" />
+        android:text="查询阅读状态" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onRequestBalanceInfo"
+        android:text="查询余额" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="onRequestBalancePay"
+        android:text="余额支付" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="wechatPay"
+        android:text="微信直接支付" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="aliPay"
+        android:text="支付宝直接支付" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="requestRechargeBalance"
+        android:text="余额充值" />
+
 </LinearLayout>
