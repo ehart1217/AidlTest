@@ -20,6 +20,12 @@
     <Button
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:onClick="onRequestUserInfo"
+        android:text="请求用户信息" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:onClick="onRequestLogout"
         android:text="退出登录" />
 
@@ -58,5 +64,11 @@
         android:layout_height="wrap_content"
         android:onClick="requestRechargeBalance"
         android:text="余额充值" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:onClick="requestBuyMoyueCard"
+        android:text="购买墨悦卡" />
 
 </LinearLayout>

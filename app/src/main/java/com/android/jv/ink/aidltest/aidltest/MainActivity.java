@@ -12,8 +12,8 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-import com.android.jv.ink.launcherink.aidllib.AccountUtils;
 import com.android.jv.ink.launcherink.aidllib.CyBalanceInfo;
+import com.android.jv.ink.launcherink.aidllib.CyContract;
 import com.android.jv.ink.launcherink.aidllib.CyPayCallback;
 import com.android.jv.ink.launcherink.aidllib.CyPayHelper;
 import com.android.jv.ink.launcherink.aidllib.CyUserCallback;
@@ -24,6 +24,13 @@ import com.android.jv.ink.launcherink.aidllib.CyUserInfo;
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
+
+    private static final int REQUEST_CODE_BALANCE_PAY = 0;
+    private static final int REQUEST_CODE_BALANCE_INFO = 1;
+    private static final int REQUEST_CODE_WECHAT_PAY = 2;
+    private static final int REQUEST_CODE_ALIPAY = 3;
+    private static final int REQUEST_CODE_RECHARGE_BALANCE = 4;
+    private static final int REQUEST_CODE_BUY_MOYUE_CARD = 5;
 
     private CyUserHelper mUserHelper;
     private CyPayHelper mPayHelper;
@@ -121,7 +128,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public void onRequestReadStatus(View view) {
         try {
-            mUserHelper.requestReadRightStatus();
+            mUserHelper.requestReadRightStatus(this);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -137,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
 //        "signType": "RSA",
 //                "sourceIp": "1.1.1.1",
 //                "timestamp": "2017-07-12 21:52:51",
-        mPayHelper.requestBalancePay(this, sign, signType, timestamp, transData);
+        mPayHelper.requestBalancePay(REQUEST_CODE_BALANCE_PAY, this, sign, signType, timestamp, transData);
     }
 
     /**
@@ -146,7 +153,7 @@ public class MainActivity extends AppCompatActivity {
      * @param view btn clicked callback
      */
     public void onRequestBalanceInfo(View view) {
-        mPayHelper.requestBalanceInfo(this);
+        mPayHelper.requestBalanceInfo(REQUEST_CODE_BALANCE_INFO, this);
     }
 
     /**
@@ -156,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public void wechatPay(View view) {
 
-        mPayHelper.requestWechatPay(this, sign, signType, timestamp, transData);
+        mPayHelper.requestWechatPay(REQUEST_CODE_WECHAT_PAY, this, sign, signType, timestamp, transData);
     }
 
     /**
@@ -165,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
      * @param view btn clicked callback
      */
     public void aliPay(View view) {
-        mPayHelper.requestAliPay(this, sign, signType, timestamp, transData);
+        mPayHelper.requestAliPay(REQUEST_CODE_ALIPAY, this, sign, signType, timestamp, transData);
     }
 
     /**
@@ -175,7 +182,11 @@ public class MainActivity extends AppCompatActivity {
      */
     public void requestRechargeBalance(View view) {
         // 第二个参数，金额，单位为分。
-        mPayHelper.requestBalanceRecharge(MainActivity.this, 1, "4002");
+        mPayHelper.requestBalanceRecharge(REQUEST_CODE_RECHARGE_BALANCE, MainActivity.this, 1, "4002");
+    }
+
+    public void requestBuyMoyueCard(View view) {
+        mPayHelper.requestBuyMoyueCard(REQUEST_CODE_BUY_MOYUE_CARD, this);
     }
 
 
@@ -220,10 +231,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onGetReadRightStatus(final String s) throws RemoteException {
+        public void onGetReadRightStatus(final int code, final String s) throws RemoteException {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    Log.i(TAG, "getReadRightStatus,code:" + code + " desc:" + s);
                     if (TextUtils.isEmpty(s)) {
                         // 获取失败
                         Toast.makeText(MainActivity.this, "result:fail", Toast.LENGTH_SHORT).show();
@@ -252,17 +264,20 @@ public class MainActivity extends AppCompatActivity {
      */
     private CyPayCallback mPayCallback = new CyPayCallback.Stub() {
         @Override
-        public void onPayResult(final int resultCode, final String successInfo, final String errorInfo) throws RemoteException {
+        public void onPayResult(final int requestCode, final int resultCode, final String successInfo, final String errorInfo) throws RemoteException {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (resultCode == AccountUtils.CODE_SUCCESS) {
+
+                    Log.i(TAG, "run: requestCode:" + requestCode);
+
+                    if (resultCode == CyContract.CODE_SUCCESS) {
                         Log.i(TAG, "onPayResult:支付成功:result: " + successInfo);
                         Toast.makeText(MainActivity.this, "支付成功:result: " + successInfo, Toast.LENGTH_SHORT).show();
-                    } else if (resultCode == AccountUtils.CODE_INSUFFICIENT_BALANCE) {
+                    } else if (resultCode == CyContract.CODE_INSUFFICIENT_BALANCE) {
                         Log.i(TAG, "onPayResult:余额不足:info: " + successInfo);
                         Toast.makeText(MainActivity.this, "余额不足:info: " + successInfo + successInfo, Toast.LENGTH_SHORT).show();
-                        mPayHelper.requestBalanceRecharge(MainActivity.this, 1, "4002");
+                        mPayHelper.requestBalanceRecharge(REQUEST_CODE_RECHARGE_BALANCE, MainActivity.this, 1, "4002");
                     } else {
                         Toast.makeText(MainActivity.this, "余额支付结果:error: " + errorInfo, Toast.LENGTH_SHORT).show();
                         Log.i(TAG, "onPayResult:余额支付结果:error: " + errorInfo);
@@ -273,10 +288,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onGetBalanceInfo(final boolean success, final CyBalanceInfo cyBalanceInfo, final String errorInfo) throws RemoteException {
+        public void onGetBalanceInfo(final int requestCode, final boolean success, final CyBalanceInfo cyBalanceInfo, final String errorInfo) throws RemoteException {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    Log.i(TAG, "onGetBalanceInfo, requestCode:" + requestCode);
                     if (success) {
                         Log.i(TAG, "onGetBalanceInfo:获余额信息成功:result: " + cyBalanceInfo);
                         Toast.makeText(MainActivity.this, "获余额信息成功:result:" + cyBalanceInfo, Toast.LENGTH_SHORT).show();
@@ -290,8 +306,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onTokenInvalid() throws RemoteException {
-            Toast.makeText(MainActivity.this, "onTokenInvalid", Toast.LENGTH_SHORT).show();
+        public void onTokenInvalid(final int requestCode) throws RemoteException {
+            Log.i(TAG, "onTokenInvalid, requestCode:" + requestCode);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this, "onTokenInvalid", Toast.LENGTH_SHORT).show();
+                }
+            });
         }
 
         /**
@@ -302,4 +324,8 @@ public class MainActivity extends AppCompatActivity {
             hasBindPayService = true;
         }
     };
+
+    public void onRequestUserInfo(View view) {
+        mUserHelper.requestUserInfo(this);
+    }
 }
