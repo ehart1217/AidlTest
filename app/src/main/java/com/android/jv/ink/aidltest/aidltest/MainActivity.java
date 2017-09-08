@@ -20,6 +20,8 @@ import com.android.jv.ink.launcherink.aidllib.CyUserCallback;
 import com.android.jv.ink.launcherink.aidllib.CyUserHelper;
 import com.android.jv.ink.launcherink.aidllib.CyUserInfo;
 
+import static android.util.Log.i;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,9 +37,6 @@ public class MainActivity extends AppCompatActivity {
     private CyUserHelper mUserHelper;
     private CyPayHelper mPayHelper;
     private String mToken;
-
-    private boolean hasBindPayService;
-    private boolean hasBindUserService;
 
     BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
         @Override
@@ -203,6 +202,12 @@ public class MainActivity extends AppCompatActivity {
      */
     private CyUserCallback mUserCallback = new CyUserCallback.Stub() {
 
+        /**
+         * 登录结果
+         * @param cyUserInfo 用户信息，当这个值为null的时候，代表请求失败了
+         * @param s 失败的信息，失败才有这个值。
+         * @throws RemoteException
+         */
         @Override
         public void onLoginResult(final CyUserInfo cyUserInfo, final String s) throws RemoteException {
             // 注意这里可能在非主线程
@@ -211,17 +216,25 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     if (cyUserInfo == null) {
                         // 登录失败
+                        Log.d(TAG, "onLoginResult: null");
                         Toast.makeText(MainActivity.this, "result,error:" + s, Toast.LENGTH_SHORT).show();
                     } else {
                         // 登录成功
                         Toast.makeText(MainActivity.this, "result:" + cyUserInfo, Toast.LENGTH_SHORT).show();
                         Log.d(TAG, "onLoginResult: " + cyUserInfo);
+                        Log.d(TAG, "onLoginResult: " + "token:" + cyUserInfo.getToken());
+                        Log.d(TAG, "onLoginResult: " + "userId:" + cyUserInfo.getUserId());
                         mToken = cyUserInfo.getToken();
                     }
                 }
             });
         }
 
+        /**
+         * 退出登录结果
+         * @param b 成功与否
+         * @throws RemoteException
+         */
         @Override
         public void onLogoutResult(boolean b) throws RemoteException {
             if (b) {
@@ -230,12 +243,18 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(MainActivity.this, "result:" + b, Toast.LENGTH_SHORT).show();
         }
 
+        /**
+         * 得到阅读状态信息
+         * @param code 阅读状态码，{@link CyContract#READ_CODE_VALID}等。
+         * @param s 失败才有的信息
+         * @throws RemoteException
+         */
         @Override
         public void onGetReadRightStatus(final int code, final String s) throws RemoteException {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Log.i(TAG, "getReadRightStatus,code:" + code + " desc:" + s);
+                    i(TAG, "getReadRightStatus,code:" + code + " desc:" + s);
                     if (TextUtils.isEmpty(s)) {
                         // 获取失败
                         Toast.makeText(MainActivity.this, "result:fail", Toast.LENGTH_SHORT).show();
@@ -247,6 +266,10 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        /**
+         * token失效
+         * @throws RemoteException
+         */
         @Override
         public void onTokenInvalid() throws RemoteException {
 
@@ -263,41 +286,58 @@ public class MainActivity extends AppCompatActivity {
      * 支付的统一回调
      */
     private CyPayCallback mPayCallback = new CyPayCallback.Stub() {
+
+        /**
+         * 支付的统一回调
+         * @param requestCode 用来标记对清的请求。
+         * @param resultCode  结果code，{@link CyContract#CODE_SUCCESS}等。
+         * @param successInfo 成功才有的信息。
+         * @param errorInfo 失败才有的信息
+         * @throws RemoteException
+         */
         @Override
         public void onPayResult(final int requestCode, final int resultCode, final String successInfo, final String errorInfo) throws RemoteException {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
 
-                    Log.i(TAG, "run: requestCode:" + requestCode);
+                    i(TAG, "run: requestCode:" + requestCode);
 
                     if (resultCode == CyContract.CODE_SUCCESS) {
-                        Log.i(TAG, "onPayResult:支付成功:result: " + successInfo);
+                        i(TAG, "onPayResult:支付成功:result: " + successInfo);
                         Toast.makeText(MainActivity.this, "支付成功:result: " + successInfo, Toast.LENGTH_SHORT).show();
                     } else if (resultCode == CyContract.CODE_INSUFFICIENT_BALANCE) {
-                        Log.i(TAG, "onPayResult:余额不足:info: " + successInfo);
+                        i(TAG, "onPayResult:余额不足:info: " + successInfo);
                         Toast.makeText(MainActivity.this, "余额不足:info: " + successInfo + successInfo, Toast.LENGTH_SHORT).show();
                         mPayHelper.requestBalanceRecharge(REQUEST_CODE_RECHARGE_BALANCE, MainActivity.this, 1, "4002");
                     } else {
                         Toast.makeText(MainActivity.this, "余额支付结果:error: " + errorInfo, Toast.LENGTH_SHORT).show();
-                        Log.i(TAG, "onPayResult:余额支付结果:error: " + errorInfo);
+                        i(TAG, "onPayResult:余额支付结果:error: " + errorInfo);
                     }
                 }
             });
 
         }
 
+        /**
+         * 得到余额信息
+         * @param requestCode 请求对应的code
+         * @param success 成功或者失败
+         * @param cyBalanceInfo 余额信息，成功才有
+         * @param errorInfo 失败信息，失败才有
+         * @throws RemoteException
+         */
         @Override
         public void onGetBalanceInfo(final int requestCode, final boolean success, final CyBalanceInfo cyBalanceInfo, final String errorInfo) throws RemoteException {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    Log.i(TAG, "onGetBalanceInfo, requestCode:" + requestCode);
+                    i(TAG, "onGetBalanceInfo, requestCode:" + requestCode);
                     if (success) {
-                        Log.i(TAG, "onGetBalanceInfo:获余额信息成功:result: " + cyBalanceInfo);
+                        i(TAG, "onGetBalanceInfo:获余额信息成功:result: " + cyBalanceInfo);
                         Toast.makeText(MainActivity.this, "获余额信息成功:result:" + cyBalanceInfo, Toast.LENGTH_SHORT).show();
                     } else {
-                        Log.i(TAG, "onGetBalanceInfo: 获取余额信息失败:error: " + errorInfo);
+                        i(TAG, "onGetBalanceInfo: 获取余额信息失败:error: " + errorInfo);
                         Toast.makeText(MainActivity.this, "获取余额信息失败:error:" + errorInfo, Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -305,9 +345,14 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+        /**
+         * token过期
+         * @param requestCode 请求对应的code
+         * @throws RemoteException
+         */
         @Override
         public void onTokenInvalid(final int requestCode) throws RemoteException {
-            Log.i(TAG, "onTokenInvalid, requestCode:" + requestCode);
+            i(TAG, "onTokenInvalid, requestCode:" + requestCode);
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -321,7 +366,7 @@ public class MainActivity extends AppCompatActivity {
          */
         @Override
         public void onBind() throws RemoteException {
-            hasBindPayService = true;
+
         }
     };
 
