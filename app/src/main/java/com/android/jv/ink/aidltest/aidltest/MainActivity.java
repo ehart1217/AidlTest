@@ -34,6 +34,10 @@ public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_CODE_RECHARGE_BALANCE = 4;
     private static final int REQUEST_CODE_BUY_MOYUE_CARD = 5;
 
+    private static final int REQUEST_CODE_LOGIN = 6;
+    private static final int REQUEST_CODE_USER_INFO = 7;
+    private static final int REQUEST_CODE_READ_INFO = 8;
+
     private CyUserHelper mUserHelper;
     private CyPayHelper mPayHelper;
     private String mToken;
@@ -96,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public void onRequestLogin(View view) {
         try {
-            mUserHelper.requestLogin(this);
+            mUserHelper.requestLogin(REQUEST_CODE_LOGIN, this);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -127,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
      */
     public void onRequestReadStatus(View view) {
         try {
-            mUserHelper.requestReadRightStatus(this);
+            mUserHelper.requestReadRightStatus(REQUEST_CODE_READ_INFO, this);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
@@ -209,22 +213,26 @@ public class MainActivity extends AppCompatActivity {
          * @throws RemoteException
          */
         @Override
-        public void onLoginResult(final CyUserInfo cyUserInfo, final String s) throws RemoteException {
+        public void onLoginResult(final int requestCode, final int resultCode, final CyUserInfo cyUserInfo, final String s) throws RemoteException {
             // 注意这里可能在非主线程
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (cyUserInfo == null) {
-                        // 登录失败
-                        Log.d(TAG, "onLoginResult: null");
-                        Toast.makeText(MainActivity.this, "result,error:" + s, Toast.LENGTH_SHORT).show();
-                    } else {
-                        // 登录成功
+                    Log.d(TAG, "requestCode:" + requestCode);
+                    Log.d(TAG, "resultCode:" + resultCode);
+                    Log.d(TAG, "errorInfo:" + s);
+
+                    if (resultCode == CyContract.CODE_TOKEN_INVALID) {
+
+                    }
+                    if (resultCode == CyContract.CODE_POST_ERROR) {
+
+                    }
+                    if (resultCode == CyContract.CODE_SUCCESS) {
                         Toast.makeText(MainActivity.this, "result:" + cyUserInfo, Toast.LENGTH_SHORT).show();
-                        Log.d(TAG, "onLoginResult: " + cyUserInfo);
-                        Log.d(TAG, "onLoginResult: " + "token:" + cyUserInfo.getToken());
-                        Log.d(TAG, "onLoginResult: " + "userId:" + cyUserInfo.getUserId());
                         mToken = cyUserInfo.getToken();
+                    } else {
+                        Toast.makeText(MainActivity.this, "失败：" + resultCode, Toast.LENGTH_SHORT).show();
                     }
                 }
             });
@@ -250,10 +258,13 @@ public class MainActivity extends AppCompatActivity {
          * @throws RemoteException
          */
         @Override
-        public void onGetReadRightStatus(final int code, final String s) throws RemoteException {
+        public void onGetReadRightStatus(final int requestCode, final int code, final String s) throws RemoteException {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    Log.d(TAG, "requestCode:" + requestCode);
+                    Log.d(TAG, "resultCode:" + code);
+                    Log.d(TAG, "info:" + s);
                     i(TAG, "getReadRightStatus,code:" + code + " desc:" + s);
                     if (TextUtils.isEmpty(s)) {
                         // 获取失败
@@ -264,15 +275,6 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             });
-        }
-
-        /**
-         * token失效
-         * @throws RemoteException
-         */
-        @Override
-        public void onTokenInvalid() throws RemoteException {
-
         }
 
         @Override
@@ -301,7 +303,8 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void run() {
 
-                    i(TAG, "run: requestCode:" + requestCode);
+                    Log.i(TAG, "run: requestCode:" + requestCode);
+                    Log.i(TAG, "run: resultCode:" + resultCode);
 
                     if (resultCode == CyContract.CODE_SUCCESS) {
                         i(TAG, "onPayResult:支付成功:result: " + successInfo);
@@ -311,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(MainActivity.this, "余额不足:info: " + successInfo + successInfo, Toast.LENGTH_SHORT).show();
                         mPayHelper.requestBalanceRecharge(REQUEST_CODE_RECHARGE_BALANCE, MainActivity.this, 1, "4002");
                     } else {
-                        Toast.makeText(MainActivity.this, "余额支付结果:error: " + errorInfo, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "余额支付结果:error: " + resultCode + "," + errorInfo, Toast.LENGTH_SHORT).show();
                         i(TAG, "onPayResult:余额支付结果:error: " + errorInfo);
                     }
                 }
@@ -371,6 +374,6 @@ public class MainActivity extends AppCompatActivity {
     };
 
     public void onRequestUserInfo(View view) {
-        mUserHelper.requestUserInfo(this);
+        mUserHelper.requestUserInfo(REQUEST_CODE_USER_INFO, this);
     }
 }
